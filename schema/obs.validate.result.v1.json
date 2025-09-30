@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/devops-mcp/obs.validate.result.v1.json",
+  "title": "Observations Validate Result v1",
+  "type": "object",
+  "properties": {
+    "ok": { "type": "boolean" },
+    "telemetry": {
+      "type": "object",
+      "properties": { "reachable": { "type": "boolean" } },
+      "required": ["reachable"],
+      "additionalProperties": true
+    },
+    "registry": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string" },
+        "exists": { "type": "boolean" }
+      },
+      "required": ["path", "exists"],
+      "additionalProperties": true
+    },
+    "dirs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "exists": { "type": "boolean" },
+          "projects": { "type": "number" },
+          "files": { "type": "number" }
+        },
+        "required": ["path", "exists"],
+        "additionalProperties": true
+      }
+    },
+    "counts": {
+      "type": "object",
+      "properties": {
+        "totalProjects": { "type": "number" },
+        "totalFiles": { "type": "number" }
+      },
+      "required": ["totalProjects", "totalFiles"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["ok", "telemetry", "registry", "dirs", "counts"],
+  "additionalProperties": true
+}
+

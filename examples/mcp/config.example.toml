@@ -1,0 +1,40 @@
+# Example MCP config aligned with the bridge contracts
+
+[allow]
+paths = ["~/Development", "~/.config", "/opt/homebrew"]
+commands = ["chezmoi", "brew", "git", "mise", "rsync", "tar", "jq", "gopass", "env", "bash", "sh"]
+pathDirs = ["/usr/bin", "/bin", "/usr/sbin", "/sbin", "/opt/homebrew/bin", "/opt/homebrew/sbin"]
+
+[dashboard_bridge]
+enabled = true
+port = 7171
+# token = "" # optional
+
+[observers]
+# directory containing scripts like git-observer.sh, manifest-observer.sh
+dir = "~/Development/system-setup-update/observers"
+# prefer XDG location for convergence with the bridge
+out_dir = "~/.local/share/devops-mcp/observations"
+timeout_ms = 5000
+
+[telemetry]
+enabled = true
+export = "otlp"
+endpoint = "http://127.0.0.1:4318"
+protocol = "http"
+
+  [telemetry.logs]
+  level = "info"
+  sink = "stderr"
+  max_file_mb = 64
+
+[audit]
+dir = "~/Library/Application Support/devops.mcp"
+kind = "sqlite"
+retainDays = 30
+maxBlobBytes = 262144
+fallbackJsonl = true
+jsonlMaxMB = 100
+
+[diagnostics]
+self_history_max = 120

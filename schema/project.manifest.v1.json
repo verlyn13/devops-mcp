@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/devops-mcp/project.manifest.v1.json",
+  "title": "Project Manifest v1",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string" },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "path": { "type": "string" }
+        },
+        "required": ["id", "type"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["name"],
+  "additionalProperties": false
+}
+

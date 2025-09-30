@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/devops-mcp/obs.line.v1.json",
+  "title": "Observation Line v1",
+  "type": "object",
+  "properties": {
+    "observer": { "type": "string" },
+    "time": { "type": "number" },
+    "project_id": { "type": "string" },
+    "data": { "type": ["object", "array", "string", "number", "boolean", "null"] }
+  },
+  "required": ["observer", "project_id"],
+  "additionalProperties": true
+}
+

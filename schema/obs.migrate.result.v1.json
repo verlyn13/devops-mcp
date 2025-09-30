@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/devops-mcp/obs.migrate.result.v1.json",
+  "title": "Observations Migrate Result v1",
+  "type": "object",
+  "properties": {
+    "ok": { "type": "boolean" },
+    "migrated": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "base": { "type": "string" },
+          "idDir": { "type": "string" },
+          "wrote": { "type": "number" },
+          "error": { "type": "string" }
+        },
+        "required": ["base", "idDir"],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["ok", "migrated"],
+  "additionalProperties": true
+}
+

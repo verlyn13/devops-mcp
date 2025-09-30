@@ -1,0 +1,296 @@
+openapi: 3.1.0
+info:
+  title: DevOps MCP Bridge API
+  version: 1.1.0
+servers:
+  - url: /
+security: []
+paths:
+  /api/telemetry-info:
+    get:
+      summary: Telemetry info
+      responses: { '200': { description: OK } }
+  /api/projects:
+    get:
+      summary: List projects
+      responses: { '200': { description: OK } }
+  /api/projects/{id}:
+    get:
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      summary: Project integration probe
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectIntegration'
+              examples:
+                example:
+                  value:
+                    ds:
+                      capabilities: { supports: ["cap1","cap2"] }
+                      health: { ok: true, version: "0.9.0" }
+                    mcp:
+                      self_status: { service: { name: "devops-mcp", version: "0.3.0" }, caps: { logsMaxFileMB: 64 } }
+                    summary:
+                      path: "/Users/me/Development/project"
+                      detectors: ["git","node","mise"]
+                      registryPath: "/Users/me/.local/share/devops-mcp/project-registry.json"
+                      registryPresent: true
+                      manifestValid: true
+                      ready: "ready"
+                    checkedAt: 1732900000000
+                    schema_version: obs.v1
+  /api/projects/{id}/manifest:
+    get:
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      summary: Validate project.manifest.yaml
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectManifestValidationResult'
+              examples:
+                ok:
+                  value:
+                    path: /abs/path/project.manifest.yaml
+                    valid: true
+                    errors: null
+                    manifest: { name: my-project, version: '1.0.0' }
+                    checkedAt: 1732900000000
+  /api/obs/projects/{id}/observers:
+    get:
+      summary: Merged NDJSON observers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses: { '200': { description: OK } }
+  /api/obs/projects/{id}/observer/{type}:
+    get:
+      summary: Filtered observer lines
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: type
+          in: path
+          required: true
+          schema: { type: string }
+      responses: { '200': { description: OK } }
+  /api/obs/validate:
+    get:
+      summary: Validate observer dirs and registry presence
+      responses: { '200': { description: OK } }
+  /api/discover:
+    get:
+      summary: Trigger discovery
+      responses: { '200': { description: OK } }
+  /api/tools/project_obs_run:
+    post:
+      summary: Run observer
+      responses: { '200': { description: OK } }
+  /api/mcp/self-status:
+    get:
+      summary: MCP self-status
+      responses: { '200': { description: OK } }
+  /api/self-status:
+    get:
+      summary: MCP self-status (base alias)
+      responses: { '200': { description: OK } }
+  /api/tools/obs_validate:
+    post:
+      summary: Run observation validation (tool)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObsValidateResult'
+              examples:
+                example:
+                  value:
+                    ok: true
+                    telemetry: { reachable: true }
+                    registry: { path: "/Users/me/.local/share/devops-mcp/project-registry.json", exists: true }
+                    dirs: [ { path: "/Users/me/.local/share/devops-mcp/observations", exists: true, projects: 2, files: 4 } ]
+                    counts: { totalProjects: 2, totalFiles: 4 }
+  /api/tools/obs_migrate:
+    post:
+      summary: Migrate per-observer files into observations.ndjson
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObsMigrateResult'
+              examples:
+                example:
+                  value:
+                    ok: true
+                    migrated: [ { base: "/Users/me/.local/share/devops-mcp/observations", idDir: "project__id", wrote: 120 } ]
+  /api/schemas/{name}:
+    get:
+      summary: Serve schema JSON with ETag
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+      responses: { '200': { description: OK }, '404': { description: Not Found } }
+  /api/discovery/schemas:
+    get:
+      summary: List available schema files
+      responses: { '200': { description: OK } }
+  /api/discovery/openapi:
+    get:
+      summary: Serve OpenAPI spec (discovery)
+      responses: { '200': { description: OK } }
+  /api/discovery/services:
+    get:
+      summary: Service discovery (DS/MCP/registry)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceDiscovery'
+              examples:
+                example:
+                  value:
+                    ds:
+                      url: http://127.0.0.1:7777
+                      well_known: http://127.0.0.1:7777/.well-known/obs-bridge.json
+                      openapi: http://127.0.0.1:7777/openapi.yaml
+                      capabilities: http://127.0.0.1:7777/v1/capabilities
+                      health: http://127.0.0.1:7777/v1/health
+                      self_status: http://127.0.0.1:7777/api/self-status
+                    mcp:
+                      url: http://127.0.0.1:4319
+                      openapi: /openapi.yaml
+                      self_status: /api/self-status
+                    registry: { }
+                    ds_token_present: false
+                    ts: 1732900000000
+  /api/obs/discovery/schemas:
+    get:
+      summary: List available schema files (alias)
+      responses: { '200': { description: OK } }
+  /api/obs/discovery/openapi:
+    get:
+      summary: Serve OpenAPI spec (alias)
+      responses: { '200': { description: OK } }
+  /api/obs/discovery/services:
+    get:
+      summary: Service discovery (alias)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceDiscovery'
+
+components:
+  schemas:
+    ProjectManifestValidationResult:
+      type: object
+      properties:
+        path: { type: string }
+        valid: { type: boolean }
+        errors:
+          type: [ 'array', 'null' ]
+          items:
+            type: object
+        manifest: { type: object }
+        checkedAt: { type: number, description: epoch ms }
+      required: [ path, valid, manifest ]
+    ObsValidateResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        telemetry:
+          type: object
+          properties: { reachable: { type: boolean } }
+          required: [ reachable ]
+        registry:
+          type: object
+          properties: { path: { type: string }, exists: { type: boolean } }
+          required: [ path, exists ]
+        dirs:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              exists: { type: boolean }
+              projects: { type: number }
+              files: { type: number }
+            required: [ path, exists ]
+        counts:
+          type: object
+          properties: { totalProjects: { type: number }, totalFiles: { type: number } }
+          required: [ totalProjects, totalFiles ]
+      required: [ ok, telemetry, registry, dirs, counts ]
+    ObsMigrateResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        migrated:
+          type: array
+          items:
+            type: object
+            properties:
+              base: { type: string }
+              idDir: { type: string }
+              wrote: { type: number }
+              error: { type: string }
+            required: [ base, idDir ]
+      required: [ ok, migrated ]
+    ProjectIntegration:
+      type: object
+      properties:
+        schema_version: { type: string }
+        ds: { type: [ 'object', 'null' ] }
+        mcp: { type: [ 'object', 'null' ] }
+        summary:
+          type: object
+          properties:
+            path: { type: [ 'string', 'null' ] }
+            detectors: { type: array, items: { type: string } }
+            registryPath: { type: string }
+            registryPresent: { type: boolean }
+            manifestValid: { type: [ 'boolean', 'null' ] }
+            ready: { type: string }
+          required: [ ready ]
+        checkedAt: { type: number, description: epoch ms }
+    ServiceDiscovery:
+      type: object
+      properties:
+        ds:
+          type: [ 'object', 'null' ]
+          properties:
+            url: { type: string }
+            well_known: { type: string }
+            openapi: { type: string }
+            capabilities: { type: string }
+            health: { type: string }
+            self_status: { type: string }
+        mcp:
+          type: object
+          properties:
+            url: { type: string }
+            openapi: { type: string }
+            self_status: { type: string }
+        registry: { type: [ 'object', 'array' ] }
+        ds_token_present: { type: boolean }
+        ts: { type: number, description: epoch ms }
+      required: [ mcp, registry, ts ]

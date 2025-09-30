@@ -1,0 +1,25 @@
+*** Begin Patch
+*** Add File: src/lib/mcpAdapter.js
++// MCP adapter using generated client when available; falls back to bridge proxy
++let mcpApi = null;
++export function setMcpClient(client) { mcpApi = client; }
++export function getMcpBase() {
++  return (import.meta.env?.VITE_MCP_URL || process.env.VITE_MCP_URL || '').replace(/\/$/, '');
++}
++
++export async function getMcpSelfStatus() {
++  const base = getMcpBase();
++  if (mcpApi) {
++    try {
++      // codegen style
++      if (typeof mcpApi.apiMcpSelfStatusGet === 'function') return (await mcpApi.apiMcpSelfStatusGet()).data;
++      // generator default style
++      if (mcpApi.DefaultApi) return (await new mcpApi.DefaultApi({ basePath: base }).apiMcpSelfStatusGet()).data;
++    } catch {}
++  }
++  const r = await fetch(`${base}/api/self-status`);
++  if (!r.ok) throw new Error(`http_${r.status}`);
++  return await r.json();
++}
+*** End Patch
+

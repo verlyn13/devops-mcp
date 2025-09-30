@@ -1,0 +1,43 @@
+name: ci
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+      - run: corepack enable
+      - run: corepack prepare pnpm@10.17.1 --activate
+      - run: pnpm i
+      - run: pnpm run check
+      - run: pnpm run lint
+      - run: pnpm test
+      - name: Build native deps
+        run: pnpm approve-builds better-sqlite3 && pnpm rebuild better-sqlite3
+      - name: Build
+        run: pnpm run build
+      - name: Integration smoke
+        run: pnpm run integration:smoke
+      - name: Upload server logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devops-mcp-logs
+          path: ~/Library/Application\ Support/devops.mcp/*.log
+      - name: Audit prod deps
+        run: pnpm audit --prod --json > audit.json || true
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-audit
+          path: audit.json

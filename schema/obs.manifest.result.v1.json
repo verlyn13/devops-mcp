@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/devops-mcp/obs.manifest.result.v1.json",
+  "title": "Project Manifest Validation Result v1",
+  "type": "object",
+  "properties": {
+    "path": { "type": "string" },
+    "valid": { "type": "boolean" },
+    "errors": { "type": ["array", "null"] },
+    "manifest": { "type": "object" },
+    "checkedAt": { "type": "number", "description": "epoch ms" }
+  },
+  "required": ["path", "valid", "manifest"],
+  "additionalProperties": true
+}

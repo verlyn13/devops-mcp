@@ -1,0 +1,319 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://example.com/devops-mcp/log_events.strict.schema.json",
+	"title": "DevOps MCP Log Event (Strict)",
+	"type": "object",
+  "oneOf": [
+    { "$ref": "#/definitions/TelemetryHealth" },
+    { "$ref": "#/definitions/SLOBreach" },
+    { "$ref": "#/definitions/AlertRouteResolved" },
+    { "$ref": "#/definitions/ConvergePlanned" },
+		{ "$ref": "#/definitions/ConvergeApplied" },
+		{ "$ref": "#/definitions/ConvergeAborted" },
+		{ "$ref": "#/definitions/PkgSyncPlanned" },
+		{ "$ref": "#/definitions/PkgSyncApplied" },
+		{ "$ref": "#/definitions/PkgSyncFailed" },
+		{ "$ref": "#/definitions/DotfilesApplied" },
+		{ "$ref": "#/definitions/SystemRepoSync" },
+		{ "$ref": "#/definitions/PolicyValidation" },
+		{ "$ref": "#/definitions/AuditRetention" },
+		{ "$ref": "#/definitions/RateLimitExceeded" }
+	],
+	"definitions": {
+		"Base": {
+			"type": "object",
+			"properties": {
+				"service": { "const": "devops-mcp" },
+				"version": { "type": "string" },
+				"env": { "type": "string" },
+				"host": { "type": "string" },
+				"level": {
+					"enum": [
+						10,
+						20,
+						30,
+						40,
+						50,
+						60,
+						"debug",
+						"info",
+						"warn",
+						"error",
+						"fatal"
+					]
+				},
+				"msg": { "type": "string" },
+				"time": { "type": ["number", "string"] },
+				"tool": { "type": "string" },
+				"trace_id": { "type": "string" },
+				"span_id": { "type": "string" },
+				"event": { "type": "string" }
+			},
+			"required": ["service", "version", "env", "host", "event"]
+		},
+    "TelemetryHealth": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "TelemetryHealth" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"enabled": { "type": "boolean" },
+						"endpoint": { "type": "string" },
+						"protocol": { "enum": ["grpc", "http"] },
+						"sample_ratio": { "type": "number" },
+						"reachable": { "type": "boolean" },
+						"lastError": { "type": "string" }
+					},
+					"required": ["enabled", "endpoint", "protocol", "reachable"]
+				}
+			]
+		},
+    "SLOBreach": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "SLOBreach" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"slo": { "type": "string" },
+						"value": { "type": "number" },
+						"threshold": { "type": "number" },
+						"kind": { "enum": ["trace", "metric", "log"] },
+						"counts": { "type": "object" },
+						"audit_ids": { "type": "object" }
+					},
+					"required": ["slo", "value", "threshold"]
+				}
+			]
+		},
+    "ConvergePlanned": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "ConvergePlanned" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"profile": { "type": "string" },
+						"commit": { "type": "string" },
+						"plan_sha": { "type": "string" },
+						"counts": { "type": "object" }
+					},
+					"required": ["profile", "plan_sha", "counts"]
+				}
+			]
+		},
+    "ConvergeApplied": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "ConvergeApplied" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"profile": { "type": "string" },
+						"commit": { "type": "string" },
+						"audit_ids": { "type": "object" },
+						"residual_counts": { "type": "object" },
+						"ok": { "type": "boolean" }
+					},
+					"required": ["profile", "audit_ids", "residual_counts", "ok"]
+				}
+			]
+		},
+    "ConvergeAborted": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "ConvergeAborted" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"reason": { "type": "string" },
+						"step": { "type": "string" },
+						"error_kind": { "type": "string" },
+						"audit_ids": { "type": "object" }
+					},
+					"required": ["reason", "step"]
+				}
+			]
+		},
+    "PkgSyncPlanned": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "PkgSyncPlanned" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"plan_sha": { "type": "string" },
+						"counts": { "type": "object" }
+					},
+					"required": ["plan_sha", "counts"]
+				}
+			]
+		},
+    "PkgSyncApplied": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "PkgSyncApplied" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"plan_sha": { "type": "string" },
+						"inert": { "type": "boolean" },
+						"residual_counts": { "type": "object" },
+						"audit_id": { "type": "string" },
+						"ok": { "type": "boolean" }
+					},
+					"required": ["plan_sha", "residual_counts", "audit_id", "ok"]
+				}
+			]
+		},
+    "PkgSyncFailed": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "PkgSyncFailed" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"plan_sha": { "type": "string" },
+						"residual_counts": { "type": "object" },
+						"audit_id": { "type": "string" },
+						"error_kind": { "type": "string" }
+					},
+					"required": ["plan_sha", "residual_counts"]
+				}
+			]
+		},
+    "DotfilesApplied": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "DotfilesApplied" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"profile": { "type": "string" },
+						"audit_id": { "type": "string" },
+						"ok": { "type": "boolean" },
+						"summary": { "type": "string" }
+					},
+					"required": ["audit_id", "ok", "summary"]
+				}
+			]
+		},
+    "SystemRepoSync": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "SystemRepoSync" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"ref": { "type": "string" },
+						"commit": { "type": "string" },
+						"verified_sig": { "type": "boolean" }
+					},
+					"required": ["commit", "verified_sig"]
+				}
+			]
+		},
+    "PolicyValidation": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "PolicyValidation" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"ref": { "type": "string" },
+						"checks_passed": { "type": "boolean" },
+						"violations": { "type": "array" }
+					},
+					"required": ["checks_passed"]
+				}
+			]
+		},
+    "AuditRetention": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "AuditRetention" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"calls_removed": { "type": "number" },
+						"blobs_removed": { "type": "number" },
+						"retain_days": { "type": "number" }
+					},
+					"required": ["calls_removed", "blobs_removed", "retain_days"]
+				}
+			]
+		},
+    "RateLimitExceeded": {
+			"allOf": [
+				{ "$ref": "#/definitions/Base" },
+				{
+					"type": "object",
+        "properties": {
+          "event": { "const": "RateLimitExceeded" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+						"tool": { "type": "string" },
+						"retry_after_ms": { "type": "number" }
+					},
+					"required": ["tool", "retry_after_ms"]
+				}
+			]
+		},
+    "AlertRouteResolved": {
+      "allOf": [ { "$ref": "#/definitions/Base" }, {
+        "type": "object",
+        "properties": {
+          "event": { "const": "AlertRouteResolved" },
+          "run_id": { "type": "string" },
+          "event_version": { "type": "string" },
+          "iso_time": { "type": "string" },
+          "profile": { "type": "string" },
+          "channel": { "type": "string" },
+          "webhookUrl": { "type": "string" },
+          "ok": { "type": "boolean" },
+          "reason": { "type": "string" }
+        },
+        "required": ["ok"],
+        "additionalProperties": false
+      } ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://example.com/devops-mcp/log_events.schema.json",
+	"title": "DevOps MCP Log Event",
+	"type": "object",
+	"properties": {
+		"service": { "const": "devops-mcp" },
+		"version": { "type": "string" },
+		"env": { "type": "string" },
+		"host": { "type": "string" },
+		"level": { "enum": ["debug", "info", "warn", "error", "fatal"] },
+		"msg": { "type": "string" },
+		"event": {
+			"enum": [
+				"TelemetryHealth",
+				"SLOBreach",
+				"ConvergePlanned",
+				"ConvergeApplied",
+				"ConvergeAborted",
+				"PkgSyncPlanned",
+				"PkgSyncApplied",
+				"PkgSyncFailed",
+				"DotfilesApplied",
+				"SystemRepoSync",
+				"PolicyValidation",
+				"AuditRetention",
+				"RateLimitExceeded"
+			]
+		},
+		"tool": { "type": "string" },
+		"trace_id": { "type": "string" },
+		"span_id": { "type": "string" }
+	},
+	"required": ["service", "version", "env", "host"],
+	"additionalProperties": true
+}

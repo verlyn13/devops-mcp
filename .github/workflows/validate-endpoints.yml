@@ -1,0 +1,54 @@
+name: Validate Endpoints (Stage 0 Gate)
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'schema/**'
+      - 'src/**'
+      - 'scripts/**'
+      - '.github/workflows/validate-endpoints.yml'
+  workflow_dispatch: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BRIDGE_URL: http://127.0.0.1:7171
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm -s build
+      - name: Prepare config
+        run: |
+          cp examples/mcp/config.example.toml $RUNNER_TEMP/config.toml
+          echo 'dashboard_bridge = { enabled = true, port = 7171 }' >> $RUNNER_TEMP/config.toml
+      - name: Start server
+        env:
+          DEVOPS_MCP_CONFIG: ${{ runner.temp }}/config.toml
+          BRIDGE_CORS: '1'
+        run: |
+          node dist/index.js &
+          echo $! > server.pid
+          # wait for bridge to start
+          for i in {1..30}; do
+            if curl -fsS $BRIDGE_URL/openapi.yaml >/dev/null; then break; fi; sleep 1; done
+      - name: Validate endpoints (base)
+        run: |
+          node scripts/validate-endpoints.mjs
+      - name: Validate endpoints (with project, if known)
+        run: |
+          # Optional: supply PROJECT_ID via secrets or repo vars to enable deeper checks
+          if [[ -n "${{ vars.PROJECT_ID }}" ]]; then PROJECT_ID="${{ vars.PROJECT_ID }}" node scripts/validate-endpoints.mjs; fi
+      - name: Stop server
+        if: always()
+        run: |
+          if [[ -f server.pid ]]; then kill $(cat server.pid) || true; fi
+

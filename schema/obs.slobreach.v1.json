@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/devops-mcp/obs.slobreach.v1.json",
+  "title": "SLO Breach v1",
+  "type": "object",
+  "properties": {
+    "slo": { "type": "string" },
+    "value": { "type": "number" },
+    "threshold": { "type": "number" },
+    "kind": { "type": "string" },
+    "run_id": { "type": "string" }
+  },
+  "required": ["slo", "value", "threshold"],
+  "additionalProperties": true
+}
+

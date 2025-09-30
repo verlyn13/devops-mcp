@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>local.devops.mcp</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/verlyn13/.local/share/mise/installs/node/24.9.0/bin/npx</string>
+    <string>-y</string>
+    <string>tsx</string>
+    <string>/Users/verlyn13/Development/personal/devops-mcp/src/index.ts</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/verlyn13/Development/personal/devops-mcp</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/verlyn13/Library/Application Support/devops.mcp/server.log</string>
+  <key>StandardErrorPath</key><string>/Users/verlyn13/Library/Application Support/devops.mcp/server.err</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:/Users/verlyn13/.local/share/mise/installs/node/24.9.0/bin</string>
+    <key>NODE_ENV</key><string>production</string>
+  </dict>
+</dict>
+</plist>
+

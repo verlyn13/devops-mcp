@@ -1,0 +1,88 @@
+*** Begin Patch
+*** Update File: src/lib/bridgeAdapter.js
+@@
+ import { getBridgeBase } from './bridgeClient';
+@@
++// Try to use generated client first; fallback to fetch helpers
++let api = null;
++try {
++  // eslint-disable-next-line import/no-unresolved
++  const { Api as DefaultApi } = await import('../generated/bridge-client');
++  const base = getBridgeBase();
++  api = new DefaultApi({ baseUrl: base });
++} catch {}
++
++const withApi = Boolean(api);
++
+ export async function getServices() {
+   const base = getBridgeBase();
+   const url = `${base}/api/discovery/services`;
+   try {
++    if (withApi) return (await api.apiDiscoveryServicesGet()).data;
+     const r = await fetch(url);
+     if (!r.ok) throw new Error(`http_${r.status}`);
+     return await r.json();
+   } catch (e) { throw e; }
+ }
+@@
+ export async function getSchemasList() {
+   const base = getBridgeBase();
+   try {
++    if (withApi) return (await api.apiDiscoverySchemasGet()).data;
+     const r = await fetch(`${base}/api/obs/discovery/schemas`);
+     if (!r.ok) throw new Error(`http_${r.status}`);
+     return await r.json();
+   } catch (e) { throw e; }
+ }
+@@
+ export async function getSchemaByName(name) {
+   const base = getBridgeBase();
+   try {
++    if (withApi) return (await api.apiSchemasNameGet({ name })).data;
+     const r = await fetch(`${base}/api/obs/schemas/${encodeURIComponent(name)}`);
+     if (!r.ok) throw new Error(`http_${r.status}`);
+     return await r.json();
+   } catch (e) { throw e; }
+ }
+@@
+ export async function getProjectManifest(id) {
+   const base = getBridgeBase();
+   try {
++    if (withApi) return (await api.apiProjectsIdManifestGet({ id })).data;
+     const r = await fetch(`${base}/api/obs/projects/${encodeURIComponent(id)}/manifest`);
+     if (!r.ok) throw new Error(`http_${r.status}`);
+     return await r.json();
+   } catch (e) { throw e; }
+ }
+@@
+ export async function getProjectIntegration(id) {
+   const base = getBridgeBase();
+   try {
++    if (withApi) return (await api.apiProjectsIdIntegrationGet({ id })).data;
+     const r = await fetch(`${base}/api/obs/projects/${encodeURIComponent(id)}/integration`);
+     if (!r.ok) throw new Error(`http_${r.status}`);
+     return await r.json();
+   } catch (e) { throw e; }
+ }
+@@
+ export async function obsValidate() {
+   const base = getBridgeBase();
+   try {
++    if (withApi) return (await api.apiToolsObsValidatePost()).data;
+     const r = await fetch(`${base}/api/obs/tools/obs_validate`, { method: 'POST' });
+     if (!r.ok) throw new Error(`http_${r.status}`);
+     return await r.json();
+   } catch (e) { throw e; }
+ }
+@@
+ export async function obsMigrate(body) {
+   const base = getBridgeBase();
+   try {
++    if (withApi) return (await api.apiToolsObsMigratePost({ requestBody: body })).data;
+     const r = await fetch(`${base}/api/obs/tools/obs_migrate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+     if (!r.ok) throw new Error(`http_${r.status}`);
+     return await r.json();
+   } catch (e) { throw e; }
+ }
+*** End Patch
+

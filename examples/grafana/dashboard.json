@@ -1,0 +1,36 @@
+{
+  "dashboard": {
+    "title": "DevOps MCP Telemetry",
+    "timezone": "browser",
+  "panels": [
+      {
+        "type": "timeseries",
+        "title": "Convergence Success Rate",
+        "targets": [
+          { "expr": "(sum(rate(mcp_tool_requests_total{tool=\"converge_host\"}[5m])) - sum(rate(mcp_tool_errors_total{tool=\"converge_host\"}[5m]))) / sum(rate(mcp_tool_requests_total{tool=\"converge_host\"}[5m]))" }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Run Duration P95 (ms)",
+        "targets": [
+          { "expr": "histogram_quantile(0.95, sum by (le) (rate(mcp_run_duration_ms_bucket[5m])))" }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "P95 Converge Duration (ms)",
+        "targets": [
+          { "expr": "histogram_quantile(0.95, sum by (le) (rate(mcp_tool_duration_ms_bucket{tool=\"converge_host\"}[5m])))" }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Telemetry Drops",
+        "targets": [
+          { "expr": "rate(telemetry_dropped_total[5m])" }
+        ]
+      }
+    ]
+  }
+}

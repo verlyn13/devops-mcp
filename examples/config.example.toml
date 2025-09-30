@@ -1,0 +1,101 @@
+[allow]
+paths = ["~/Development", "~/.config", "/opt/homebrew"]
+commands = ["chezmoi", "brew", "git", "mise", "rsync", "tar", "jq", "gopass", "env", "bash", "sh"]
+pathDirs = ["/usr/bin", "/bin", "/usr/sbin", "/sbin", "/opt/homebrew/bin", "/opt/homebrew/sbin"]
+
+[timeouts]
+default = "30s"
+brew = "300s"
+
+workspaces = ["~/Development/personal", "~/Development/business-org"]
+
+[audit]
+dir = "~/Library/Application Support/devops.mcp"
+kind = "sqlite" # or "jsonl" or "sqlite_wasm"
+retainDays = 30
+maxBlobBytes = 262144
+fallbackJsonl = true
+jsonlMaxMB = 100
+
+[limits]
+default_rps = 2
+read_only_rps = 5
+pkg_admin_rps = 0.2
+
+[capabilities]
+mcp_health = "read_only"
+policy_manifest = "read_only"
+dotfiles_state = "read_only"
+pkg_inventory = "read_only"
+repo_status = "read_only"
+pkg_sync_plan = "pkg_admin"
+patch_apply_check = "mutate_repo"
+project_manifest = "read_only"
+project_status = "read_only"
+project_inventory = "read_only"
+project_discover = "read_only"
+project_obs_run = "read_only"
+project_health = "read_only"
+
+[secrets]
+gopass_roots = ["personal/devops/*", "org/*"]
+gopass_storeDir = "~/.password-store"
+
+[pkg]
+apply_mode = "per-op" # or "bundle"
+brew_bundle_file = "~/Brewfile"
+brew_bundle_cleanup = false
+mise_mode = "per-op"
+
+[telemetry]
+enabled = true
+export = "otlp"            # or "none"
+endpoint = "http://127.0.0.1:4318"
+protocol = "http"          # http exporters are used
+sample_ratio = 1.0
+env = "local"
+
+  [telemetry.logs]
+  level = "info"            # debug|info|warn|error
+  sink = "stderr"           # stderr|file
+  # allow extra attributes to be forwarded to OTLP logs (flattened)
+  attributes_allowlist = []
+  # log rotation cap in MB (min 8MB)
+  max_file_mb = 64
+
+  [telemetry.redact]
+  # Additional redact paths merged with built-ins:
+  # OPENAI_API_KEY, GITHUB_TOKEN, AWS_SECRET_ACCESS_KEY, ANTHROPIC_API_KEY,
+  # and patterns: *.token, *.secret, *.password, *.apiKey, *.api_key
+  paths = ["secrets.api", "*.session"]
+  censor = "[REDACTED]"
+
+[slos]
+# Convergence
+maxResidualPctAfterApply = 0
+maxConvergeDurationMs = 120000
+# Backpressure SLOs (combined + per-kind)
+maxDroppedPer5m = 0
+maxDroppedPer5mTrace = 0
+maxDroppedPer5mMetric = 0
+maxDroppedPer5mLog = 0
+
+[diagnostics]
+# maximum in-memory self status snapshots
+self_history_max = 120
+
+# Optional HTTP dashboard bridge
+[dashboard_bridge]
+enabled = false
+port = 4319
+# token is recommended if exposing beyond localhost
+token = ""
+allowed_origins = []
+# disabled by default; required for operations like system_converge(confirm=true)
+allow_mutations = false
+[observers]
+# directory containing scripts like git-observer.sh, mise-observer.sh
+dir = "~/Development/system-setup-update/observers"
+# output directory for NDJSON observations (per-project files)
+out_dir = "~/Library/Application Support/devops.mcp/observations"
+timeout_ms = 5000

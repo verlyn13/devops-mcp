@@ -1,0 +1,40 @@
+extends:
+  - spectral:oas
+
+rules:
+  mcp-alias-discovery-services:
+    description: "OpenAPI must document /api/obs/discovery/services alias"
+    message: "Missing paths./api/obs/discovery/services"
+    given: "$"
+    severity: error
+    then:
+      field: "paths./api/obs/discovery/services"
+      function: truthy
+
+  mcp-alias-discovery-schemas:
+    description: "OpenAPI must document /api/obs/discovery/schemas alias"
+    message: "Missing paths./api/obs/discovery/schemas"
+    given: "$"
+    severity: error
+    then:
+      field: "paths./api/obs/discovery/schemas"
+      function: truthy
+
+  mcp-alias-discovery-openapi:
+    description: "OpenAPI must document /api/obs/discovery/openapi alias"
+    message: "Missing paths./api/obs/discovery/openapi"
+    given: "$"
+    severity: error
+    then:
+      field: "paths./api/obs/discovery/openapi"
+      function: truthy
+
+  mcp-base-self-status:
+    description: "OpenAPI must document /api/self-status (base alias)"
+    message: "Missing paths./api/self-status"
+    given: "$"
+    severity: error
+    then:
+      field: "paths./api/self-status"
+      function: truthy
+

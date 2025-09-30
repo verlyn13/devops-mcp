@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/devops-mcp/service.discovery.v1.json",
+  "title": "Service Discovery v1",
+  "type": "object",
+  "properties": {
+    "ds": {
+      "type": ["object", "null"],
+      "properties": {
+        "url": { "type": "string" },
+        "well_known": { "type": "string" },
+        "openapi": { "type": "string" },
+        "capabilities": { "type": "string" },
+        "health": { "type": "string" },
+        "self_status": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "mcp": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "openapi": { "type": "string" },
+        "self_status": { "type": "string" }
+      },
+      "required": ["url", "openapi", "self_status"],
+      "additionalProperties": true
+    },
+    "registry": { "type": ["object", "array"] },
+    "ds_token_present": { "type": "boolean" },
+    "ts": { "type": "number", "description": "epoch ms" }
+  },
+  "required": ["mcp", "registry", "ts"],
+  "additionalProperties": true
+}

@@ -1,0 +1,31 @@
+name: Stage 2 Validation (MCP)
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  stage2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        run: |
+          corepack enable
+          pnpm i --frozen-lockfile=false
+      - name: OAS Lint
+        run: pnpm run oas:lint
+      - name: OAS Bundle
+        run: pnpm run oas:bundle
+      - name: Generate Types (3.1 native)
+        run: pnpm run gen:types
+      - name: Static alias parity (OpenAPI)
+        run: node scripts/validate-alias-parity.mjs
+      - name: Type check
+        run: pnpm check
+      - name: Conventions
+        run: node scripts/validate-conventions.mjs

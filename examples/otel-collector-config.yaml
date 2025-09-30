@@ -1,0 +1,31 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  prometheusremotewrite:
+    endpoint: "http://localhost:9090/api/v1/write"
+    resource_to_telemetry_conversion:
+      enabled: true
+  loki:
+    endpoint: "http://localhost:3100/loki/api/v1/push"
+    labels:
+      attributes:
+        service_name: service
+        environment: env
+        event: event
+        level: level
+        tool: tool
+        profile: profile
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheusremotewrite]
+    logs:
+      receivers: [otlp]
+      exporters: [loki]
+

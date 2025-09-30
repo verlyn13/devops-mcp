@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/devops-mcp/obs.integration.v1.json",
+  "title": "Project Integration Result v1",
+  "type": "object",
+  "properties": {
+    "schema_version": { "type": "string" },
+    "ds": { "type": ["object", "null"] },
+    "mcp": { "type": ["object", "null"] },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "path": { "type": ["string", "null"] },
+        "detectors": { "type": "array", "items": { "type": "string" } },
+        "registryPath": { "type": "string" },
+        "registryPresent": { "type": "boolean" },
+        "manifestValid": { "type": ["boolean", "null"] },
+        "ready": { "type": "string" }
+      },
+      "required": ["ready"],
+      "additionalProperties": true
+    },
+    "checkedAt": { "type": "number", "description": "epoch ms" }
+  },
+  "required": ["summary"],
+  "additionalProperties": true
+}

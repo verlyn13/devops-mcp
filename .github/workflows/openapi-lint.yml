@@ -1,0 +1,17 @@
+name: OpenAPI Lint
+
+on:
+  pull_request:
+    paths:
+      - 'docs/openapi.yaml'
+      - '.github/workflows/openapi-lint.yml'
+  workflow_dispatch: {}
+
+jobs:
+  redocly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint OpenAPI
+        run: npx -y @redocly/cli@latest lint docs/openapi.yaml
+

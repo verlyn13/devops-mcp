@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Demo Runbook (Integration Checklist)
+    url: https://github.com/${{ github.repository }}/blob/main/docs/integration-checklist.md
+    about: Follow the 15‑minute end-to-end demo checklist
+
