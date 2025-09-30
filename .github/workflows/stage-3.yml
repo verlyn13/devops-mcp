@@ -1,4 +1,4 @@
-name: Validate Endpoints (Stage 0 Gate)
+name: Stage 3 — SSE & Observers (MCP)
 
 on:
   pull_request:
@@ -7,15 +7,15 @@ on:
       - 'schema/**'
       - 'src/**'
       - 'scripts/**'
-      - '.github/workflows/validate-endpoints.yml'
+      - '.github/workflows/stage-3.yml'
   workflow_dispatch: {}
 
 jobs:
-  validate:
+  sse:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     env:
       BRIDGE_URL: http://127.0.0.1:7171
+      SSE_SMOKE: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,29 +30,27 @@ jobs:
         run: |
           cp examples/mcp/config.example.toml $RUNNER_TEMP/config.toml
           echo 'dashboard_bridge = { enabled = true, port = 7171 }' >> $RUNNER_TEMP/config.toml
+          echo '[audit]' >> $RUNNER_TEMP/config.toml
+          echo 'dir = "'$RUNNER_TEMP'"' >> $RUNNER_TEMP/config.toml
       - name: Start server
         env:
           DEVOPS_MCP_CONFIG: ${{ runner.temp }}/config.toml
           BRIDGE_CORS: '1'
+          BRIDGE_TEST_ENDPOINTS: '1'
         run: |
           node dist/index.js &
           echo $! > server.pid
-          # wait for bridge to start
           for i in {1..30}; do
             if curl -fsS $BRIDGE_URL/openapi.yaml >/dev/null; then break; fi; sleep 1; done
-      - name: Validate endpoints (base)
+      - name: Emit synthetic event
         run: |
-          node scripts/validate-endpoints.mjs
-      - name: Validate endpoints (with project, if known)
-        run: |
-          # Optional: supply PROJECT_ID via secrets or repo vars to enable deeper checks
-          if [[ -n "${{ vars.PROJECT_ID }}" ]]; then PROJECT_ID="${{ vars.PROJECT_ID }}" node scripts/validate-endpoints.mjs; fi
-      - name: SSE smoke (optional)
-        if: ${{ env.SSE_SMOKE == '1' }}
+          curl -sSf -X POST "$BRIDGE_URL/api/test/emit-event" -H 'content-type: application/json' \
+            -d '{"event":"CIEvent","run_id":"ci_stage3","tool":"ci","profile":"ci","project_id":"ci"}'
+      - name: SSE validate
         env:
           OBS_BRIDGE_URL: ${{ env.BRIDGE_URL }}
         run: |
-          node scripts/sse-validate.mjs --limit=5 --timeoutMs=5000 || true
+          node scripts/sse-validate.mjs --event CIEvent --limit=1 --timeoutMs=8000
       - name: Stop server
         if: always()
         run: |

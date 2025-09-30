@@ -122,6 +122,30 @@ export function startDashboardBridge() {
       res.end(JSON.stringify(info));
       return;
     }
+    if (url.pathname === '/api/test/emit-event' && process.env.BRIDGE_TEST_ENDPOINTS === '1' && req.method === 'POST') {
+      try {
+        const body = await readJson<any>();
+        const info = getTelemetryInfo();
+        const file = info.logs?.localFile || '';
+        if (!file) { res.statusCode = 500; return res.end('log_file_missing'); }
+        const now = Date.now();
+        const evt = {
+          event: String(body?.event || 'TestEvent'),
+          run_id: String(body?.run_id || `run_${now}`),
+          tool: String(body?.tool || 'test'),
+          profile: String(body?.profile || 'test'),
+          project_id: String(body?.project_id || 'test'),
+          iso_time: new Date(now).toISOString(),
+          time: now,
+          service: 'devops-mcp'
+        };
+        try { fs.mkdirSync(path.dirname(file), { recursive: true }); } catch {}
+        fs.appendFileSync(file, JSON.stringify(evt) + '\n');
+        res.setHeader('content-type','application/json');
+        res.end(JSON.stringify({ ok: true, appended: true, path: file }));
+      } catch { res.statusCode = 500; res.end('emit_error'); }
+      return;
+    }
     if (url.pathname === '/api/mcp/self-status') {
       try {
         const { getSelfStatus } = await import('../resources/self_status.js');
@@ -148,6 +172,7 @@ export function startDashboardBridge() {
           endpoints: {
             telemetry_info: '/api/telemetry-info',
             openapi: '/openapi.yaml',
+            events_stream: '/api/events/stream',
             discovery_services: '/api/discovery/services',
             discovery_registry: '/api/discovery/registry',
             discovery_schemas: '/api/discovery/schemas',
@@ -871,8 +896,17 @@ export function startDashboardBridge() {
       const lokiUrl = process.env.TELEMETRY_LOKI_URL;
       const sel: Record<string,string> = {};
       for (const k of ['run_id','event','tool','profile','project_id']) { const v = url.searchParams.get(k); if (v) sel[k]=v; }
-      res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
-      const send = (e: any) => { res.write(`data: ${JSON.stringify(e)}\n\n`); };
+      res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive', 'x-accel-buffering': 'no' });
+      // Backpressure-aware writer + heartbeat
+      let paused = false;
+      const write = (chunk: string) => {
+        if (paused) return false;
+        const ok = res.write(chunk);
+        if (!ok) { paused = true; res.once('drain', () => { paused = false; }); }
+        return ok;
+      };
+      const send = (e: any) => { if (!paused) write(`data: ${JSON.stringify(e)}\n\n`); };
+      const HEARTBEAT_MS = 15000; const hb = setInterval(() => { if (!paused) write(`: keepalive ${Date.now()}\n\n`); }, HEARTBEAT_MS);
       if (lokiUrl) {
         let last = Date.now()*1e6 - 10*1e9; // 10s back in ns
         let intervalMs = 1000;
@@ -888,12 +922,12 @@ export function startDashboardBridge() {
             const streams = j?.data?.result || [];
             for (const s of streams) { for (const v of (s.values||[])) { try { const ev = JSON.parse(v[1]); let ok=true; for (const [k,val] of Object.entries(sel)) { if (ev[k]!==val) { ok=false; break; } } if (ok) send(ev); } catch {} } }
             last = end;
-            intervalMs = 1000; // reset on success
+            intervalMs = paused ? Math.min(intervalMs * 2, 10000) : 1000; // back off if paused
           }).catch(() => { intervalMs = Math.min(intervalMs * 2, 10000); })
           .finally(() => { setTimeout(loop, intervalMs); });
         };
         loop();
-        req.on('close', () => { stopped = true; res.end(); });
+        req.on('close', () => { stopped = true; clearInterval(hb); res.end(); });
       } else {
         const file = info.logs?.localFile || '';
         let lastSize = 0;
@@ -905,18 +939,25 @@ export function startDashboardBridge() {
               let buf = '';
               stream.on('data', (chunk) => { buf += chunk.toString('utf8'); });
               stream.on('end', () => {
-              for (const line of buf.split('\n')) {
-                if (!line.trim()) continue; try { const ev = JSON.parse(line); let ok=true; for (const [k,val] of Object.entries(sel)) { if (ev[k]!==val) { ok=false; break; } } if (ok) send(ev); } catch {}
+              if (!paused) {
+                for (const line of buf.split('\n')) {
+                  if (!line.trim()) continue; try { const ev = JSON.parse(line); let ok=true; for (const [k,val] of Object.entries(sel)) { if (ev[k]!==val) { ok=false; break; } } if (ok) send(ev); } catch {}
+                }
               }
             });
             lastSize = st.size;
           }
         } catch {}
       }, 1000);
-      req.on('close', () => { clearInterval(timer); res.end(); });
+      req.on('close', () => { clearInterval(timer); clearInterval(hb); res.end(); });
       }
       return;
     }
+
+    // Note: Observer listing and filtering endpoints are implemented earlier
+    // using NDJSON merge and type-specific filtering. Duplicate placeholder
+    // endpoints and CI-only emit endpoint have been removed to avoid conflicts.
+
     if (url.pathname.startsWith('/api/runs/')) {
       const runId = url.pathname.split('/').pop() || '';
       if (!runId) { res.statusCode=400; return res.end('run_id_required'); }

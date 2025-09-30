@@ -11,6 +11,8 @@ const lineRules = [
   { name: 'OBS_BRIDGE_URL default must be 7171', re: /\bOBS_BRIDGE_URL\b\s*[:=]\s*['"]?http:\/\/127\.0\.0\.1:(?!7171)\d+/ },
   { name: 'BRIDGE_URL default must be 7171 (fallback only)', re: /\bBRIDGE_URL\b\s*[:=]\s*['"]?http:\/\/127\.0\.0\.1:(?!7171)\d+/ },
   { name: 'DS_BASE_URL default must be 7777', re: /\bDS_BASE_URL\b\s*[:=]\s*['"]?http:\/\/127\.0\.0\.1:(?!7777)\d+/ },
+  // Workflows must use Node 24
+  { name: 'Workflows must use Node 24', re: /\.github\/workflows\/.+\n[\s\S]*?node-version:\s*'(?!(24))\d+'/ },
 ];
 function* walk(dir){
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

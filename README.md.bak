@@ -1,0 +1,107 @@
+DevOps MCP Server (Personal)
+
+Overview
+- A small, safety-first MCP server that exposes your golden-path workflows (chezmoi, mise, brew, git) to agent clients with strict policy and audit. Targets Node 24, stdio transport.
+
+Quick Dev
+- Ensure Node 24 is active (mise): `mise use -g node@24`
+- Install deps: `pnpm i` (or `npm i`)
+- Run dev (no build): `pnpm dev` (or `npm run dev`)
+- Build: `pnpm build` (or `npm run build`)
+- Start: `pnpm start` (or `npm start`)
+
+Codex CLI Wiring (local, stdio)
+- Add an MCP entry pointing to your dev server (disabled by default). Enable after `pnpm dev` or build/start is confirmed.
+
+Capabilities (initial)
+- Tools: `mcp_health`, `patch_apply_check`, `pkg_sync_plan` (plan-only), `pkg_sync_apply` (gated), `dotfiles_apply` (gated), `secrets_read_ref`, `converge_host` (routine)
+- Resources: `dotfiles_state`, `policy_manifest`, `pkg_inventory`, `repo_status`, `telemetry_info`
+
+Policy & Safety (initial)
+- Hardened exec wrapper: `execFile` only, sanitized PATH, no inherited env by default.
+- JSONL audit at: `~/Library/Application Support/devops.mcp/audit.jsonl` with per-call entries.
+- Allowlists are stubbed in code; TOML config hook is present for future expansion.
+- Rate limiting per tool/resource via `[limits]` and `[capabilities]` in config.
+
+Security Model
+- SecretRef allowlist: configure `[secrets] gopass_roots = ["personal/devops/*", "org/*"]`; any path outside is denied.
+- Traversal guarded: rejects `..`, `//`, leading `/`, and dot-files.
+- Hashed audits only: secret accesses recorded as `refHash` (sha256) with no secret bytes; values never serialized.
+- Env injection: secretRefs are resolved and injected into the child process env only; values are not logged or echoed.
+
+Apply Verification
+- `pkg_sync_apply` executes per-op brew/mise changes under `confirm=true` + global lock.
+- Post-apply, the server re-reads inventory and computes `residual` against the plan. If any residual remains, `ok=false`.
+- INERT mode (`DEVOPS_MCP_INERT=1`): no system changes, returns `inert=true`, writes an inert state file, and subsequent plan should be a no-op for the same desired inputs.
+
+Troubleshooting
+- Framing: integration and clients use newline-delimited JSON on stdout; logs go to stderr. Avoid `Content-Length` framing.
+- Ready banner: the server writes `READY <epoch>` to stderr after handlers are registered; integration waits on it.
+- Logs: local dev writes pretty logs to TTY and JSON to `~/Library/Application Support/devops.mcp/logs/server.ndjson`. In prod/CI, logs are JSON on stderr for your collector/supervisor to capture.
+- INERT: export `DEVOPS_MCP_INERT=1` during tests to avoid system mutations.
+- WAL files: live alongside the DB as `audit.sqlite3-wal`; CI runs a truncation checkpoint to keep it small.
+
+launchd service (macOS)
+- See `examples/devops.mcp.plist` and load with:
+  - `launchctl bootstrap gui/$UID examples/devops.mcp.plist`
+  - `launchctl kickstart -k gui/$UID/local.devops.mcp`
+  - Logs at `~/Library/Application Support/devops.mcp/server.log`
+
+Next (per plan)
+- Routines and secret handles (gopass), capability tiers enforcement for mutating tools.
+
+Example config
+- See `examples/config.example.toml` for a ready-to-tweak TOML.
+- Failure semantics
+- Circuit-break rules: `converge_host` aborts after `pkg_sync_apply` if `ok=false` and never attempts `dotfiles_apply`.
+- Lock order: package (`pkg`) first, then `dotfiles` (and future `repo`). Tools acquire locks in this order and release promptly.
+- Timeouts & retries: per-step timeouts from `[timeouts]`; `pkg_sync_apply` retries once on transient failure; `dotfiles_apply` does not retry.
+- Audit IDs: all mutating steps emit `audit_id` which you can search in the audit store (SQLite, SQLite WASM, or JSONL). Example search:
+  - SQLite: `SELECT * FROM calls WHERE id = '<audit_id>'` in `audit.sqlite3`
+  - SQLite WASM: set `[audit] kind = "sqlite_wasm"` when native bindings are unavailable on Node 24.
+
+Integration & Dashboard
+- See docs/guides/dashboard-integration.md for endpoints and examples.
+- Bridge defaults to disabled; enable via `[dashboard_bridge] enabled=true, port=7171`.
+- Observer scripts live under `[observers].dir` and should output NDJSON to stdout.
+
+Generated clients (typed)
+- Bridge client: `./scripts/generate-openapi-client.sh [BRIDGE_URL] [OUT_DIR]`
+- DS client: `DS_BASE_URL=... ./scripts/generate-openapi-client-ds.sh [OUT_DIR]`
+- MCP client: `MCP_BASE_URL=... ./scripts/generate-openapi-client-mcp.sh [OUT_DIR]`
+- All scripts prefer openapi-typescript-codegen (axios), fallback to OpenAPI Generator (npx), then docker.
+- CI tip: run generation during build and check in or package `src/generated/**` artifacts as needed by the dashboard.
+
+Reliability & Caps
+- Logs rotate daily or when exceeding `telemetry.logs.max_file_mb` (min 8MB).
+- Audit JSONL rotates when exceeding `audit.jsonlMaxMB` and prunes older rotated files beyond `audit.retainDays`.
+- Self-status history is in-memory and bounded by `diagnostics.self_history_max`.
+  - JSONL: `rg '<audit_id>' ~/Library/Application Support/devops.mcp/audit.jsonl`
+
+Telemetry
+- See `docs/telemetry.md` for endpoints, config, and event vocabulary.
+- See `docs/observability.md` for collector, compose, and stack runbook.
+- Programmatic access for other repos:
+  - Import `getTelemetryInfo()` from `src/lib/telemetry/info.ts` to read normalized endpoints and log sinks at runtime.
+  - Import types and constants from `src/lib/telemetry/contract.ts` for dashboards.
+
+**Operations**
+- Startup/health
+  - Start with `pnpm start` or via launchd (see `examples/devops.mcp.plist`).
+  - On startup, the server logs a structured `ServiceStart` line and an OTLP reachability banner to stderr.
+  - Fetch `devops://telemetry_info` to inspect telemetry endpoints, env, reachability, log sinks, redaction, and SLOs.
+- Telemetry setup
+  - Traces/Metrics via OTLP: set `[telemetry] enabled=true`, `export='otlp'`, `endpoint`, `protocol=('http'|'grpc')`.
+  - Logs ingestion:
+    - JSON: prod/CI logs to stderr; local logs pretty (TTY) + JSON file at `${audit.dir}/logs/server.ndjson` (daily rotation).
+    - OTLP Logs (optional): when `export='otlp'`, logs are forwarded via a Pino→OTLP transport. Attribute filtering is strict by default; extend via `[telemetry.logs] attributes_allowlist`.
+- SLOs and alerts
+  - Configure `[slos]`: `maxResidualPctAfterApply`, `maxConvergeDurationMs`, `maxDroppedPer5m`, and per-kind drop thresholds.
+  - Breaches emit `SLOBreach` events; dashboards should alert on them.
+- Repo safety
+  - Configure `system_repo` with SSH allowlist; `allow_https=false` by default.
+  - Repo cache is traversal-safe, validated after clone, and pruned daily.
+- Secrets
+  - Use `secrets_read_ref` to obtain opaque references; pass via `secretRefs` to tools. Values are never logged or persisted.
+- Policy and limits
+  - Enforce capability tiers in `[capabilities]`; tune per-resource limits in `[limits]`.

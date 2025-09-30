@@ -199,6 +199,92 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServiceDiscovery'
 
+  # Stage 3 — SSE & Observers
+  /api/events/stream:
+    get:
+      summary: Server-Sent Events stream with backpressure and filtering
+      description: |
+        Streams observability events in text/event-stream format with:
+        - 15-second heartbeat messages
+        - Backpressure-aware writing with drain events
+        - Query parameter filtering by run_id, event, tool, profile, project_id
+        - Events sourced from Loki or local file fallback
+      parameters:
+        - name: run_id
+          in: query
+          schema: { type: string }
+          description: Filter events by run ID
+        - name: event
+          in: query
+          schema: { type: string }
+          description: Filter events by event type
+        - name: tool
+          in: query
+          schema: { type: string }
+          description: Filter events by tool name
+        - name: profile
+          in: query
+          schema: { type: string }
+          description: Filter events by profile
+        - name: project_id
+          in: query
+          schema: { type: string }
+          description: Filter events by project ID
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-sent events stream with JSON data lines
+
+  /api/test/emit-event:
+    post:
+      summary: Emit synthetic event for testing (requires BRIDGE_TEST_ENDPOINTS)
+      description: |
+        Test endpoint to emit synthetic events for CI validation.
+        Only available when BRIDGE_TEST_ENDPOINTS environment variable is set.
+        Events are sent to both Loki and local file telemetry systems.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestEvent'
+            examples:
+              example:
+                value:
+                  event: "CIEvent"
+                  run_id: "ci_stage3"
+                  tool: "ci"
+                  profile: "ci"
+                  project_id: "ci"
+      responses:
+        '200':
+          description: Event emitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestEventResponse'
+              examples:
+                example:
+                  value:
+                    status: "emitted"
+                    event:
+                      event: "CIEvent"
+                      run_id: "ci_stage3"
+                      tool: "ci"
+                      profile: "ci"
+                      project_id: "ci"
+                      iso_time: "2024-11-29T12:00:00.000Z"
+                      message: "Test event: CIEvent"
+                      level: "info"
+        '400':
+          description: Bad request - event and run_id required, or invalid JSON
+        '404':
+          description: Test endpoints disabled (BRIDGE_TEST_ENDPOINTS not set)
+
 components:
   schemas:
     ProjectManifestValidationResult:
@@ -294,3 +380,30 @@ components:
         ds_token_present: { type: boolean }
         ts: { type: number, description: epoch ms }
       required: [ mcp, registry, ts ]
+    TestEvent:
+      type: object
+      properties:
+        event: { type: string, description: "Event type" }
+        run_id: { type: string, description: "Run identifier" }
+        tool: { type: string, description: "Tool name (optional)" }
+        profile: { type: string, description: "Profile name (optional)" }
+        project_id: { type: string, description: "Project identifier (optional)" }
+      required: [event, run_id]
+
+    TestEventResponse:
+      type: object
+      properties:
+        status: { type: string, enum: ["emitted"], description: "Emission status" }
+        event:
+          type: object
+          properties:
+            event: { type: string }
+            run_id: { type: string }
+            tool: { type: string }
+            profile: { type: string }
+            project_id: { type: string }
+            iso_time: { type: string, format: date-time }
+            message: { type: string }
+            level: { type: string }
+          required: [event, run_id, tool, profile, project_id, iso_time, message, level]
+      required: [status, event]

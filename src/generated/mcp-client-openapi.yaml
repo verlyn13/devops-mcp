@@ -145,6 +145,35 @@ paths:
     get:
       summary: List available schema files
       responses: { '200': { description: OK } }
+  /api/events/stream:
+    get:
+      summary: Server-Sent Events stream
+      description: |
+        Streams newline-delimited events via Server-Sent Events (SSE).
+        Filters supported via query params: run_id, event, tool, profile, project_id.
+      parameters:
+        - in: query
+          name: run_id
+          schema: { type: string }
+        - in: query
+          name: event
+          schema: { type: string }
+        - in: query
+          name: tool
+          schema: { type: string }
+        - in: query
+          name: profile
+          schema: { type: string }
+        - in: query
+          name: project_id
+          schema: { type: string }
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
   /api/discovery/services:
     get:
       summary: Service discovery (DS/MCP/registry)

@@ -38,3 +38,29 @@ rules:
       field: "paths./api/self-status"
       function: truthy
 
+  mcp-sse-path-present:
+    description: "OpenAPI must document /api/events/stream"
+    message: "Missing paths./api/events/stream"
+    given: "$"
+    severity: error
+    then:
+      field: "paths./api/events/stream"
+      function: truthy
+
+  mcp-observers-path-present:
+    description: "OpenAPI must document /api/obs/projects/{id}/observers"
+    message: "Missing paths./api/obs/projects/{id}/observers"
+    given: "$"
+    severity: warn
+    then:
+      field: "paths./api/obs/projects/{id}/observers"
+      function: truthy
+
+  mcp-observer-type-path-present:
+    description: "OpenAPI must document /api/obs/projects/{id}/observer/{type}"
+    message: "Missing paths./api/obs/projects/{id}/observer/{type}"
+    given: "$"
+    severity: warn
+    then:
+      field: "paths./api/obs/projects/{id}/observer/{type}"
+      function: truthy
